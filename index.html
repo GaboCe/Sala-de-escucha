@@ -95,6 +95,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   background:linear-gradient(90deg,var(--accent) 0 calc(var(--k,0)*100%),var(--fg) calc(var(--k,0)*100%) 100%);
   -webkit-background-clip:text;background-clip:text}
 .ly.plain{cursor:default;opacity:.9;color:var(--fg);font-family:var(--f-body);font-weight:500;font-size:17px;line-height:2.1}
+.foot{max-width:1200px;margin:28px auto 0;text-align:center;font-size:11.5px;color:var(--muted);opacity:.75;letter-spacing:.02em}
+.credit{margin:22px 0 0;font-size:12px;color:var(--muted);opacity:.8}
 .ly.plain.coro{color:var(--accent);opacity:1}
 .coro-key{font-size:12px;font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:6px}
 .coro-key::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--accent)}
@@ -223,6 +225,7 @@ body.dim .app,body.dim header{opacity:0}
     <div class="lyrics" id="lyrics"><p class="ly plain">La letra aparece acá mientras suena la canción.</p></div>
   </section>
 </main>
+<footer class="foot">© 2026 Gabriel Asa · Letras y música registradas en DNDA y SADAIC · Todos los derechos reservados</footer>
 <div class="toast" id="toast" role="status"></div>
 
 
@@ -357,7 +360,7 @@ function drawLyrics(t){lastActive=-1;const box=$('#lyrics');
   const cnt={};st.forEach(x=>{if(x&&x!==-1&&x.first&&!x.counted){x.counted=1;cnt[x.first]=(cnt[x.first]||0)+1}});
   const fixed=t.song&&t.song.coro?t.song.coro.map(key):null;
   const isCoro=i=>st[i]&&st[i]!==-1&&(fixed?fixed.includes(st[i].first):cnt[st[i].first]>1);
-  box.innerHTML=t.lyrics.map((l,i)=>`<p class="ly ${timed&&mode==='kara'?'':'plain'} ${isCoro(i)?'coro':''}" data-i="${i}">${esc(l.text)||'&nbsp;'}</p>`).join('');box.scrollTop=0}
+  box.innerHTML=t.lyrics.map((l,i)=>`<p class="ly ${timed&&mode==='kara'?'':'plain'} ${isCoro(i)?'coro':''}" data-i="${i}">${esc(l.text)||'&nbsp;'}</p>`).join('')+(t.song?'<p class="credit">Letra y música: Gabriel Asa ©</p>':'');box.scrollTop=0}
 function tick(){
   const tm=media.currentTime,d=media.duration||0;
   $('#cur').textContent=fmt(tm);if(d){$('#seek').value=Math.round(tm/d*1000);$('#pulse').style.setProperty('--p',tm/d)}
