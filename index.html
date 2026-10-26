@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Un espacio para frenar, escuchar y conectar. Canciones con mensaje, con su letra para leer mientras suenan.">
+<meta property="og:title" content="Sala de Escucha">
+<meta property="og:description" content="Un espacio para frenar, escuchar y conectar.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Sala de Escucha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sala oscura de tres zonas — catálogo y lista | escenario (portada + transporte) | atril con la letra */
+:root{
+  --bg:#130e13; --panel:#1c151c; --panel-2:#251c25; --line:#3a2d39;
+  --fg:#f1e8ee; --muted:#a6949f; --accent:#e3a63c; --accent-ink:#1a1206; --cool:#6fb3b8;
+  --f-display:"Syne","Arial Black",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 32px}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:1320px;margin:0 auto 18px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;margin:0;line-height:1}
+h1 span{color:var(--accent)}
+.tag{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+/* orden: 1 canciones · 2 mi lista · 3 sonando · 4 letra */
+.app{max-width:1200px;margin:0 auto;display:grid;gap:18px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+.step{font-family:var(--f-mono);color:var(--accent);margin-right:8px}
+.stage{max-width:560px;width:100%;justify-self:center}
+.cat-panel .list,.pl-panel .list{max-height:420px;overflow-y:auto}
+@media (max-width:820px){.app{grid-template-columns:minmax(0,1fr)}.stage{max-width:none}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;min-width:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 10px}
+
+/* catálogo + lista */
+.list{list-style:none;margin:0;padding:0 8px 10px;display:grid;gap:2px}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 8px;border-radius:10px}
+.row:hover{background:var(--panel-2)}
+.row.now{background:var(--panel-2)}
+.row.now .t{color:var(--accent)}
+.row img,.row .vid{width:44px;height:44px;border-radius:6px;object-fit:cover;display:block}
+.row .vid{background:var(--panel-2);display:grid;place-items:center;font-family:var(--f-mono);font-size:10px;color:var(--cool)}
+.t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;gap:2px}
+.ib{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.ib:hover{background:var(--line);color:var(--fg)}
+.ib svg{width:16px;height:16px}
+.empty{padding:6px 16px 18px;color:var(--muted);font-size:13.5px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;font-weight:600}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{color:var(--accent-ink);filter:brightness(1.08)}
+.upload{padding:4px 16px 16px;display:flex;gap:8px;flex-wrap:wrap}
+.upload input{position:absolute;width:1px;height:1px;opacity:0}
+.hint{padding:0 16px 14px;font-size:12px;color:var(--muted)}
+
+/* escenario */
+.stage{padding:16px;display:grid;gap:14px}
+.art{position:relative;aspect-ratio:1/1;max-width:100%;width:100%;border-radius:10px;overflow:hidden;background:var(--panel-2)}
+.art.video{aspect-ratio:16/9}
+.art img,.art video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.art video{object-fit:contain;background:#000}
+.art .pulse{position:absolute;inset:auto 0 0 0;height:4px;background:var(--accent);transform-origin:left;transform:scaleX(var(--p,0))}
+.meta h3{font-family:var(--f-display);font-weight:800;font-size:clamp(22px,2.6vw,30px);margin:0;line-height:1.1;text-wrap:balance}
+.meta p{margin:4px 0 0;color:var(--muted)}
+.seek{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.transport{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.tb{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.tb:hover{color:var(--fg);background:var(--panel-2)}
+.tb.on{color:var(--accent)}
+.tb svg{width:20px;height:20px}
+.play{width:62px;height:62px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.play svg{width:26px;height:26px}
+.play:hover{filter:brightness(1.08)}
+.next-up{font-size:13px;color:var(--muted);text-align:center;min-height:1.5em}
+.next-up b{color:var(--fg);font-weight:600}
+
+/* letra */
+.lyrics-panel{display:flex;flex-direction:column;max-height:calc(100vh - 120px);min-height:360px}
+.lyrics{overflow-y:auto;padding:8px 16px 40vh;scroll-behavior:smooth;flex:1}
+.ly{font-family:var(--f-display);font-weight:600;font-size:clamp(19px,1.8vw,23px);line-height:1.8;margin:0;color:var(--muted);opacity:.55;transition:opacity .25s,color .25s;cursor:pointer;text-wrap:balance}
+.ly:hover{opacity:.85}
+.ly.past{opacity:.35}
+.ly.active{opacity:1;color:transparent;
+  background:linear-gradient(90deg,var(--accent) 0 calc(var(--k,0)*100%),var(--fg) calc(var(--k,0)*100%) 100%);
+  -webkit-background-clip:text;background-clip:text}
+.ly.plain{cursor:default;opacity:.9;color:var(--fg);font-family:var(--f-body);font-weight:500;font-size:17px;line-height:2.1}
+.ly.plain.coro{color:var(--accent);opacity:1}
+.coro-key{font-size:12px;font-weight:600;color:var(--accent);display:inline-flex;align-items:center;gap:6px}
+.coro-key::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--accent)}
+.mode{display:flex;gap:4px;background:var(--panel-2);border-radius:999px;padding:3px}
+.mode button{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;color:var(--muted)}
+.mode button[aria-pressed=true]{background:var(--line);color:var(--fg)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.vers{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.ver{font-family:var(--f-mono);font-size:11px;padding:2px 7px;border-radius:6px;border:1px solid var(--line);color:var(--muted);font-variant-numeric:tabular-nums}
+.ver:hover{color:var(--fg)}
+.ver[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.share{margin:0 16px 14px;padding:12px;border-radius:10px;background:var(--panel-2)}
+.share p{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.share-row{display:flex;gap:6px}
+.share input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:6px 10px;font-family:var(--f-mono);font-size:12px}
+.banner{max-width:1200px;margin:0 auto 18px;padding:12px 16px;border-radius:12px;border:1px solid var(--accent);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.banner p{margin:0}
+.hdr-r{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.howto{font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.howto:hover{color:var(--accent)}
+.intro{position:fixed;inset:0;z-index:50;overflow-y:auto;background:radial-gradient(120% 80% at 50% -10%,#3a2433 0%,var(--bg) 60%);
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));
+  display:grid;place-items:center;transition:opacity .9s ease,visibility .9s}
+.intro.out{opacity:0;visibility:hidden}
+.beam{position:absolute;inset:0;pointer-events:none;background:conic-gradient(from 168deg at 50% -8%,transparent 0deg,rgba(227,166,60,.13) 8deg,rgba(227,166,60,.05) 16deg,transparent 24deg);animation:flicker 6s ease-in-out infinite}
+@keyframes flicker{0%,100%{opacity:.9}50%{opacity:.6}}
+.intro-in{position:relative;max-width:600px;display:grid;gap:14px}
+.eyebrow{margin:0;font-family:var(--f-mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.intro h2{font-family:var(--f-display);font-weight:800;font-size:clamp(32px,6vw,54px);line-height:1.02;letter-spacing:-.02em;text-transform:none;color:var(--fg);margin:0 0 6px;text-wrap:balance}
+.intro h2 em{font-style:normal;color:var(--accent)}
+.intro-in>p{margin:0;font-size:17px;line-height:1.6;color:var(--fg);opacity:.88;max-width:62ch}
+.tips{list-style:none;margin:8px 0 6px;padding:0;display:grid;gap:12px}
+.tips li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:start;font-size:15px;color:var(--muted)}
+.tips b{color:var(--fg);font-weight:600}
+.tips svg{width:26px;height:26px;color:var(--accent)}
+.enter{justify-self:start;font-size:16px;padding:12px 26px;margin-top:6px}
+body.dim .app,body.dim header{opacity:0}
+.app,header{transition:opacity 1.2s ease .3s}
+@media (prefers-reduced-motion:reduce){.intro,.app,header{transition:none}.beam{animation:none}}
+.d{font-size:13px;color:var(--muted);line-height:1.45;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta .desc{color:var(--fg);opacity:.8;font-size:15px;line-height:1.5;margin-top:8px;max-width:60ch}
+.tl{display:flex;align-items:center;gap:8px;min-width:0}
+.tl .t{min-width:0}
+.style{flex:none;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
+.edit{margin-top:6px;width:100%;background:var(--bg);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:5px 9px;font:inherit;font-size:13px}
+.editbar{margin:0 16px 10px;padding:12px;border-radius:10px;border:1px dashed var(--accent);display:grid;gap:8px}
+.editbar p{margin:0;font-size:13px}
+.editbar textarea{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;font-family:var(--f-mono);font-size:11px}
+.search{padding:0 16px 8px}
+.search input{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--fg);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px}
+.search input::placeholder{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.lyrics{scroll-behavior:auto}.ly{transition:none}}
+</style>
+
+</head>
+<body>
+<header>
+  <h1>Sala de <span>Escucha</span></h1>
+  <div class="hdr-r"><button class="howto" id="howto">Cómo escuchar</button><div class="tag">16 canciones</div></div>
+</header>
+
+<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div class="beam" aria-hidden="true"></div>
+  <div class="intro-in">
+    <p class="eyebrow">Experiencia de escucha</p>
+    <h2 id="introTitle">Un espacio para frenar, escuchar y <em>conectar.</em></h2>
+    <p>No viniste a buscar ruido de fondo. Este es un rincón para prestar atención, leer las letras y dejar que cada mensaje te atraviese.</p>
+    <p>Ponete los auriculares, ponete cómodo y dale play a lo que importa.</p>
+    <ul class="tips">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7" rx="1.5"/><rect x="17" y="14" width="4" height="7" rx="1.5"/></svg><span><b>Envolvente:</b> disfrutá cada detalle acústico directo al oído.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h9M5 20h6"/></svg><span><b>Sincronizada:</b> la letra te guía en paralelo a la canción.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h7M18 15v6M15 18h6"/></svg><span><b>A tu medida:</b> armá tu propia selección y dejala correr de principio a fin.</span></li>
+    </ul>
+    <button class="btn primary enter" id="enter">Entrar a la sala</button>
+  </div>
+</div>
+<div class="banner" id="banner" hidden>
+  <p>Te compartieron una lista de <b id="bannerN"></b> canciones.</p>
+  <div class="acts" style="gap:6px"><button class="btn primary" id="useShared">Escucharla</button><button class="btn" id="ignoreShared">No, gracias</button></div>
+</div>
+<main class="app">
+    <section class="panel cat-panel" aria-labelledby="h-cat">
+      <div class="ph"><h2 id="h-cat"><span class="step">1</span>Canciones</h2><button class="btn" id="addAll">Agregar todas</button></div>
+      <div class="editbar" id="editBar" hidden>
+        <p><b>Modo edición.</b> Escuchá cada versión y escribí su estilo. Llevás <b id="editCount">0</b> cargados.</p>
+        <button class="btn primary" id="copyStyles">Copiar estilos</button>
+        <textarea id="styleDump" hidden rows="5" aria-label="Estilos para copiar"></textarea>
+      </div>
+      <datalist id="estilos"><option value="Rock"><option value="Rock pesado"><option value="Pop"><option value="Pop rock"><option value="Balada"><option value="Acústico"><option value="Folk"><option value="Blues"><option value="Funk"><option value="Reggae"><option value="Ska"><option value="Cumbia"><option value="Salsa"><option value="Bachata"><option value="Bossa nova"><option value="Tango"><option value="Jazz"><option value="Punk"><option value="Metal"><option value="Hip hop"><option value="Trap"><option value="Reggaetón"><option value="Electrónica"><option value="Techno"><option value="House"><option value="Synth pop"></datalist>
+      <div class="search"><input id="q" type="search" placeholder="Buscar canción" aria-label="Buscar canción" autocomplete="off"></div>
+      <ul class="list" id="catalog"></ul>
+    </section>
+    <section class="panel pl-panel" aria-labelledby="h-list">
+      <div class="ph"><h2 id="h-list"><span class="step">2</span>Mi lista</h2><div class="acts" style="gap:6px"><button class="btn" id="shareBtn">Compartir</button><button class="btn" id="clearList">Vaciar</button></div></div>
+      <div class="share" id="shareBox" hidden>
+        <p>Cualquiera que abra este link escucha tu lista, en este orden.</p>
+        <div class="share-row"><input id="shareLink" readonly aria-label="Link de tu lista"><button class="btn primary" id="copyLink">Copiar</button></div>
+      </div>
+      <ul class="list" id="playlist"></ul>
+      <p class="empty" id="listEmpty">Tocá + en una canción para sumarla. Suenan de corrido en el orden que elijas, y tu lista queda guardada en este dispositivo.</p>
+    </section>
+
+  <section class="panel stage" aria-labelledby="h-now">
+    <div class="ph" style="padding:0"><h2 id="h-now"><span class="step">3</span>Sonando</h2></div>
+    <div class="art" id="art">
+      <img id="cover" alt="">
+      <video id="media" playsinline preload="metadata" hidden></video>
+      <div class="pulse" id="pulse"></div>
+    </div>
+    <div class="meta"><h3 id="title">Elegí una canción</h3><p id="artist">Armá tu lista y dale play</p><p class="desc" id="desc" hidden></p></div>
+    <div class="seek"><span id="cur">0:00</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Posición"><span id="dur">0:00</span></div>
+    <div class="transport">
+      <button class="tb" id="shuffle" aria-label="Aleatorio" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+      <button class="tb" id="prev" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="play" id="play" aria-label="Reproducir"><svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
+      <button class="tb" id="next" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+      <button class="tb" id="repeat" aria-label="Repetir lista" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/></svg></button>
+    </div>
+    <div class="next-up" id="nextUp"></div>
+  </section>
+
+  <section class="panel lyrics-panel" aria-labelledby="h-ly">
+    <div class="ph"><h2 id="h-ly"><span class="step">4</span>Letra</h2>
+    </div>
+    <div class="lyrics" id="lyrics"><p class="ly plain">La letra aparece acá mientras suena la canción.</p></div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const ARTIFACT='https://claude.ai/artifact/BVn3VTaizFgEQsu6XqVncq';
+
+/* ---------- catálogo: cada canción con sus versiones (duración en segundos) ---------- */
+const SONGS=[
+ {"c": "ve", "title": "Vestiduras", "v": [246.0], "pal": ["#14102a", "#4b3a8c", "#f2c46b"], "desc": "Una invitación a frenar, elegir tus pensamientos con cuidado y reprogramar la mente para avanzar con fe y calma, incluso cuando duela.", "lyrics": ["Mantén los pensamientos, buenos a mano", "alimenta siempre tu fe, sin duda de lograrlo", "la maldad está ahí afuera, igual que la bondad", "las dos te están hablando, ¿a quién vas a escuchar", "cuando se estén peleando por ganar?", "", "Cuida esos pensamientos, bellos como a hermanos", "alimenta siempre tu poder, sin dudas de lograrlo", "la pereza está ahí afuera, junto a la voluntad", "las dos te están llamando, ¿con quién querrás andar", "cuando te sientas quieto y sin avanzar?", "", "Es momento de romper las ataduras,", "es momento de romper tus vestiduras.", "", "Creo que está ahí en mis pensamientos", "el determinar si soy feliz", "no quiero esperar por tanto tiempo", "para comenzar a caminar", "si ya sé que cuando duele hay que actuar", "aunque antes conviene relajar...", "si ya sé que cuando duele hay que actuar", "aunque antes conviene relajar.", "", "Mantén los pensamientos, puros intactos", "alimenta siempre tu fe, no hay dudas de lograrlo", "el rencor está ahí afuera, también está el perdón", "los dos están vibrando, ¿a quién vas a abrazar", "cuando te sientas tenso, sin poder amar?", "", "Es momento de romper las ataduras,", "es momento de romper tus vestiduras.", "", "Creo que está ahí en mis pensamientos", "el determinar si soy feliz", "no quiero esperar por tanto tiempo", "para comenzar a caminar", "si ya sé que cuando duele hay que actuar", "aunque antes conviene relajar.", "", "Si ya sé que cuando duele hay que actuar...", "¡Reprograma tu mente, avanzá!"]},
+ {"c": "ma", "title": "Máscaras", "v": [234.1], "desc": "Una canción sobre la falsa amistad y la verdad que, tarde o temprano, siempre sale a la luz.", "pal": ["#250d22", "#7d2d6b", "#f0b35c"], "lyrics": ["Vienes vestido de amigo, de persona guay, aunque siento que en el fondo esperas el momento de atacar.", "Pretendes además de la mano, todo el brazo y aunque vendas aires de buenas vibras, ni vos te las compras.", "", "Con el tiempo brota del subsuelo la pura verdad, la que no puedes con palabras, disimular.", "Nuestra sombra no se pone cómoda en la oscuridad, ella aparece cotidianamente, con sus máscaras.", "", "Dices estar agradecido de tanta amistad, aunque siempre que te necesitan, vos nunca estás.", "Buscas además del escape, la inculpabilidad, así siempre podrás salir bien parado.", "", "Con el tiempo brota del subsuelo la pura verdad, la que no puedes con palabras, disimular.", "Nuestra sombra no se pone cómoda en la oscuridad, ella aparece cotidianamente, con sus máscaras.", "", "Siempre brota en algún momento la pura verdad, la que no puedes con palabras, ya maquillar.", "Con sus máscaras... Ya no puedes disimular. (Vienes vestido de amigo...)"]},
+ {"c": "op", "title": "Opino", "v": [172.2], "pal": ["#2b1606", "#d9822b", "#7fd6c2"], "desc": "Sobre lo fácil que es criticar a los demás y lo difícil que es mirarse a uno mismo.", "lyrics": ["¿Observo y opino, para qué opino?", "Si en este momento nadie me preguntó", "No opino, critico", "Si en mi boca, ningún elogio se pronunció", "", "Opino en el cine, también en las redes", "Opino camino vuelta de la esquina", "Opino en silencio", "Ya que, de mi boca, ninguna oración", "Se envalentonó", "", "Ya lo dijo Tales en la antigüedad", "Conocerse a uno mismo", "es difícil de verdad", "pero lo más fácil es hablar mal", "de los demás", "Lleno mi cabeza de puras críticas", "Ya sin darme cuenta, no puedo respirar", "escapo por el túnel", "Que me aleja, de mi realidad", "", "Observo y opino, siempre opino", "Si de esa gente me quiero disociar", "Critico y critico", "Firmo por escrito, que de esa agua", "No he de tomar", "No no", "", "Vuelvo un instante, por fin me ilumino", "Entiendo que todos podemos fallar", "Ya no critico", "Me miro a mí mismo, seguro que un muerto", "Tengo en mi placard", "", "Ya lo dijo Tales en la antigüedad", "Conocerse a uno mismo", "es difícil de verdad", "pero lo más fácil es hablar mal", "de los demás", "Lleno mi cabeza de puras críticas", "Ya sin darme cuenta, no puedo respirar", "escapo por el túnel", "Que me aleja, de mi realidad", "", "Ya lo dijo Tales en la antigüedad", "Conocerse a uno mismo", "es difícil de verdad", "pero lo más fácil es hablar mal", "de los demás", "Lleno mi cabeza de puras críticas", "Ya sin darme cuenta, no puedo respirar", "escapo por el túnel", "Que me aleja, de mi realidad"]},
+ {"c": "oa", "title": "Ojo ajeno", "v": [116.8], "pal": ["#0f1d24", "#2f6f7a", "#f0c36d"], "desc": "Sobre la costumbre de mirar los errores ajenos para no tener que ver los propios.", "lyrics": ["Huyo de la gente, queriendo huir de mí, miro el ojo ajeno, para volver huir, miro a otro lado que es mejor, miro a otro lado y los critico.", "Los zapatos ajenos no me los sé poner, sé que en sus errores siempre me esconderé, miro a otro lado que es mejor, miro a otro lado y los critico.", "", "Qué fácil es, estar sentado y criticar, qué fácil es, hablar de los demás, qué fácil es, no hacer nada, pero hablar, más fácil es criticar.", "", "Ignoro las huellas, que dejan mis pies, ya lo dijo el ciego, es mejor no ver, miro a otro lado que es mejor miro a otro lado y los critico", "", "Qué fácil es, estar sentado y criticar, qué fácil es, hablar de los demás, qué fácil es, no hacer nada, pero hablar, más fácil es criticar.", "", "Huyo de la gente queriendo huir de mí…"]},
+ {"c": "ys", "title": "Yo soy así", "v": [125.7], "pal": ["#1d1030", "#c2462f", "#ffd36b"], "desc": "Una mirada con humor a las excusas que nos ponemos para no cambiar.", "lyrics": ["Nos ponemos una capa, nos creemos Superman. Nos soltamos de esa mano, pensamos saber volar. Nos dio hambre, la vida quiero desayunar, desayunar.", "Nos asignan algún puesto, el mundo está a los pies. Hoy mi pupo está más limpio, de lo que estaba ayer. Si algo pasa es culpa tuya, yo ya me confesé, ya me confesé.", "", "Yo soy así, es lo que hay, qué le voy a hacer. Ahora no puedo, más tarde veré, tengo cosas que hacer.", "", "Nos dejamos esta barba, para ser mayor de edad. Leemos mucho sobre el mar, creemos saber nadar. Me cuesta mucho despertar, por tanto trasnochar, de trasnochar.", "Llega la nube negra, debe ser casualidad. Hoy mi pupo está muy lindo, mejor no podría estar. No me leas más los cuentos, de espiritualidad, la espiritualidad.", "", "Yo soy así, es lo que hay, qué le voy a hacer. Ahora no puedo, más tarde veré, tengo cosas que hacer.", "Yo soy así, es lo que hay, qué le voy a hacer. Ahora no puedo, más tarde veré, tengo cosas que hacer.", "", "Es lo que hay."]},
+ {"c": "se", "title": "Senderos", "v": [185.8], "pal": [], "desc": "Una invitación a soltar los miedos, salir al camino y reencontrarte con los sueños que dejaste pasar.", "lyrics": ["Tomemos nuestras ropas, las primeras que encontremos, y larguémonos de esta ciudad.", "Dejemos nuestros miedos, nuestras dudas, nuestros tiempos, y empecemos de una vez a volar.", "", "Verdades ocultas quiero encontrar, sueños que hace tiempo dejé pasar, un momento eterno de libertad al que nunca quise renunciar.", "Verdades ocultas quiero encontrar, sueños que hace tiempo dejé pasar, un momento eterno de libertad al que nunca quise renunciar.", "", "Caminaremos por los cerros, por las rutas, sus senderos, que nos conducirán a donde queramos llegar.", "Tomemos nuestras cosas, un buen libro y un pañuelo para despedir al miedo, que ya no volverá.", "", "Verdades ocultas quiero encontrar, sueños que hace tiempo dejé pasar, un momento eterno de libertad al que nunca quise renunciar."]},
+ {"c": "st", "title": "Será tarde", "v": [212.3], "pal": [], "desc": "Un recordatorio de que el tiempo no vuelve: no regales tus días, dales valor.", "coro": ["No regales los días"], "lyrics": ["Pensamos ser eternos físicamente", "Dejamos pasar el tiempo", "Pensando en trabajar", "Nos olvidamos de nosotros", "No pensamos en los demás", "Miramos para otro lugar", "", "Cuando abras los ojos", "Ya será tarde", "Cuando despiertes del sueño", "tendrás que ir a dormir", "", "No regales los días", "Dale valor a tu vida", "No rifes tu vida", "Dale valor a tus días", "", "Cualquier tontera es un problema", "Cualquier problema una discusión", "Demasiado tiempo de mal humor", "La vida es un juego, no un combate eterno", "Todo está en nuestras manos", "Abramos el corazón", "", "Cuando abras los ojos", "Ya será tarde", "Cuando despiertes del sueño", "tendrás que ir a dormir", "", "No regales los días", "Dale valor a tu vida", "No rifes tu vida", "Dale valor a tus días", "No regales los días", "Dale valor a tu vida", "No rifes tu vida", "Dale valor a tus días", "", "Cuando abras los ojos", "Ya será tarde", "Cuando despiertes del sueño", "tendrás que ir a dormir", "", "No regales los días", "Dale valor a tu vida", "No rifes tu vida", "Dale valor a tus días"]},
+ {"c": "nf", "title": "No fue paz", "v": [210.0], "pal": [], "desc": "Sobre dejar de huir, mirarse de frente y entender que en esta vida no se avanza solo.", "lyrics": ["Con alardes de grandeza", "siempre caminé", "no vi las trampas", "que el camino iba dejando", "Caí sin darme cuenta,", "pues tardé en entender", "que no se avanza solo", "en esta vida.", "Con el tiempo fui entendiendo,", "que el andar es codo a codo,", "y que evitar al otro", "es dejar para después.", "", "No fue paz,", "fue una luz incómoda", "que no me deja ir", "ni correr hacia otro lado", "No fue paz,", "fue por fin", "mirarme de frente", "y saber", "que ya no hay atajos", "", "En una esquina escuché", "a un vagabundo susurrar", "somos hijos del mismo Dios,", "hermanos en la misma compasión.", "Pude recordar a un sabio,", "diciéndole a unos muchachos:", "nuestra historia se refleja", "en los demás.", "", "No fue paz,", "fue una luz incómoda", "que no me deja ir", "ni correr hacia otro lado", "No fue paz,", "fue por fin", "mirarme de frente", "y saber", "que ya no hay atajos", "", "Ese día me marcó,", "al punto en que hoy", "al rechazar a alguien,", "algo mío queda sin perdón,", "no queda otra opción", "queda aceptarme,", "tal como fui,", "tal como soy.", "", "No fue paz,", "fue aceptarme", "No fue paz,", "aunque duela", "aunque duela", "aunque duela", "aunque duela."]},
+ {"c": "cp", "title": "Campeón", "v": [247.9], "pal": [], "desc": "Sobre plantarse frente a los miedos y salir a la cancha de la vida, como el Diego en aquel mundial.", "lyrics": ["Ya son las siete de la tarde,", "Un oso blanco viene por mí,", "Hoy por fin voy a enfrentarlo o no…", "Yo soy de esas ovejas negras,", "Que no saben por dónde ir,", "Aunque no creas las cosas me pesan,", "Ya no me atrevo a salir.", "Soy todo lo que piensas y lo que no también,", "Ya no soy lo que era al amanecer.", "", "Si no todo lo que brilla es oro,", "Tampoco soy lo peor,", "Voy a parar esa pelota", "Y a encarar, como el Diego en aquel mundial.", "Voy a desparramar rivales,", "Nada me va a parar,", "Seré campeón en mi vida,", "Y a encarar, como el Diego en aquel mundial.", "", "La vida y su carrera", "no la logro entender,", "No sé de mí qué espera,", "ya lo averiguaré.", "Camino entre pantanos,", "Qué más te puedo decir,", "Sé que está todo en mis manos", "Aunque también es un decir.", "Uno es todo lo que piensa y lo que no también,", "Sé que mis luces se despiertan al anochecer.", "", "Si no todo lo que brilla es oro,", "Tampoco soy lo peor,", "Voy a parar esa pelota", "Y a encarar, como el Diego en aquel mundial.", "Voy a desparramar rivales,", "Nada me va a parar,", "Seré campeón en mi vida,", "Y a encarar, como el Diego en aquel mundial.", "", "Si no todo lo que brilla es oro,", "Tampoco soy lo peor,", "Voy a parar esa pelota", "Y a encarar, como el Diego en aquel mundial.", "Voy a desparramar rivales,", "Nada me va a parar,", "Seré campeón en mi vida,", "Y a encarar, como el Diego en aquel mundial."]},
+ {"c": "cu", "title": "Cupido", "v": [288.3], "pal": [], "desc": "Una historia con humor sobre Cupido, que desapareció del barrio y dejó a todos esperando su flecha.", "lyrics": ["Y luego de verlo raro a Cupido", "Con comportamientos totalmente desconocidos", "Y una actitud muy sospechosa", "Un día él desapareció", "", "Por los mares se ha perdido Cupido", "O en el cielo está dormido", "¿Dónde está él?", "¿Dónde está él?", "Por el barrio hace tiempo que no lo ven", "Las malas lenguas dicen que", "Se retiró", "Se retiró", "Antes regalame un tiro", "De tus flechas de amor", "", "Cupido bandido", "¿Dónde te has metido?", "Cupido amigo", "¿Por dónde andas hoy?", "Cupido bandido", "Has caído en líos", "Cupido amigo", "¿Dónde quebraste hoy?", "", "En los bares se ha perdido Cupido", "En el infierno está dormido", "Ahí se quedó", "Ahí se quedó", "Como un fantasma ronda por las noches", "Usando aplicaciones repartiendo placer", "Hasta el amanecer", "Antes regalame un tiro", "De tus flechas de amor", "", "Cupido bandido", "¿En qué te has metido?", "Cupido amigo", "¿Dónde trabajas hoy?", "Cupido bandido", "¿En qué has caído?", "Cupido amigo", "No descarriles hoy", "Antes del retiro, acuérdate de mí.", "Cupido bandido", "¿Hoy qué te has metido?", "Cupido amigo", "¿Por dónde andas hoy?", "Cupido bandido", "Siempre fuimos amigos", "Cupido mi amigo", "Aún espero por ti"]},
+ {"c": "ru", "title": "Ruso", "v": [217.6], "pal": [], "desc": "El retrato de un abogado cargado de problemas ajenos, que espera el finde para desconectar.", "coro": ["Ahí lo verás por la ciudad", "Por las noches ya no lo verás"], "lyrics": ["¿Quién va a pagar estos daños?", "Dice mi abogado", "No trates de escapar", "Te pide una cautelar,", "a la fuerza", "Tendrás que pagar", "Él anda en auto importado", "Enamorado", "Él y su Celica", "Ahí van rodando", "Tu atención", "va a despertar", "", "Ahí lo verás por la ciudad", "Con su traje azul, un profesional", "Cargado de responsabilidad", "Esperando el finde para quemar", "", "Sus días son un combo intenso", "De conflictos ajenos", "Remoja en alcohol sus penas", "Y varios problemas", "Aunque nunca él lo declarará", "", "Por las noches ya no lo verás", "El ruso es un profesional", "Cargando crisis de la edad", "Esperando el finde para quemar", "Esperando el finde para quemar", "Esperando el finde para quemar"]},
+ {"c": "al", "title": "Dina", "v": [171.7], "pal": [], "desc": "El retrato de una mujer que hizo su camino y hoy abre su mesa y su corazón a todos.", "coro": ["Creció donde hacer era a escondidas", "Hoy decir y hacer ya no es a escondidas"], "lyrics": ["De escuela pupila, fumando a escondidas,", "Escapándose por el bosque.", "De religión protestante, liderando el coro", "En la iglesia de Tres Arroyos.", "Prohibido está leer Corín Tellado", "Es obligación hacer silencio en la mesa", "", "Creció donde hacer era a escondidas,", "El colegio danés era su vida,", "El campo le enseñó más de una cosa,", "Y pasado el tiempo se alejó", "Y pasado el tiempo se alejó", "", "Viajó para Mardel junto a polizonte", "Tras los sueños locos de sus hijos", "Siempre pone en la mesa su corazón", "Recibiendo a quien quiera sumarse.", "Prepara el feteque como ninguna", "Conductora disponible a toda hora", "", "Hoy decir y hacer ya no es a escondidas", "El loco de Milito es casi su vida", "Los años le enseñaron más de dos cosas", "Y pasado el tiempo en la ciudad se quedó,", "Y pasado el tiempo, Dina se quedó", "Y pasado el tiempo la ciudad le gustó", "Los años le enseñaron más de dos cosas", "Siempre pone en la mesa su corazón", "Prepara el feteque como ninguna", "Y pasado el tiempo, Dina se quedó", "Y pasado el tiempo la ciudad le gustó"]},
+ {"c": "lp", "title": "La paciencia", "v": [292.8], "pal": [], "desc": "Sobre soltar la ansiedad que nos tironea entre el pasado y el futuro, para habitar el presente, calmar la mente y respetar los tiempos de la vida.", "lyrics": ["La paciencia golpea mi puerta", "Dicen que lo hace bastante fuerte", "Usted disculpe, no puedo escuchar", "Con tanta ansiedad", "Hablándome al oído", "Mi mente viaja sin rumbo fijo", "Busca conceptos donde descansar", "Hasta el momento no puedo encontrarlos", "Con tantos murmullos", "Sonando de lado a lado", "", "El camino está libre de vallas", "Y yo estoy aquí tan quieto", "Sin disfrutar cada momento", "Y sin esperar el tiempo", "Que cada cosa tiene", "El camino está libre de vallas", "Y yo estoy aquí tan quieto", "Sin disfrutar cada momento", "Y sin esperar el tiempo", "Que cada cosa tiene", "", "El presente viene constantemente", "Dicen se asoma por mi ventana", "Por el momento yo no puedo verlo", "Pensando tanto en el futuro", "Mientras descanso en el pasado", "", "El camino está libre de vallas", "Y yo estoy aquí tan quieto", "Sin disfrutar cada momento", "Y sin esperar el tiempo", "Que cada cosa tiene", "El camino está libre de vallas", "Y yo estoy aquí tan quieto", "Sin disfrutar cada momento", "Y sin esperar el tiempo", "Que cada cosa tiene."]},
+ {"c": "po", "title": "Polizonte", "coro": ["Pero en las noches me desvelan", "Por eso hay días que me rebelo", "Y en las noches me despierto"], "v": [219.2], "pal": [], "desc": "El relato de un policía retirado que extraña la acción, pero hoy pelea batallas más difíciles: las de todos los días.", "lyrics": ["Fui polizonte de muy joven", "y aunque hace años retirado", "aún extraño las andanzas.", "Esos combates con maleantes,", "operativos en las calles", "bajo un sol insoportable.", "", "Pero en las noches me desvelan", "los días grises, las noches turbias,", "que ya quiero olvidar...", "", "Seguía órdenes a diario y sin chistar,", "por eso ya no hago tanto caso.", "Estoy cansado del control", "que no es policial,", "pero es aún más riguroso.", "", "Por eso hay días que me rebelo", "y luego me desaparezco,", "intentando olvidar…", "", "La familia y el dinero van más que bien,", "de la salud mejor no hablemos.", "Hoy día me es más complicado sobrevivir,", "que en el pasado uniformado.", "", "Y en las noches me despierto", "Con más de mil pensamientos", "Pensando en cómo escapar…"]},
+ {"c": "ut", "title": "Utopía", "v": [230.6], "pal": [], "desc": "Los deseos de un soñador: un pasado que enseñe, amigos de verdad y un corazón que marque el camino.", "lyrics": ["Que el pasado deje experiencia y no fantasmas en la oscuridad,", "que el presente sea el camino escogido y el futuro solo algo que vendrá,", "que los miedos y la ansiedad salgan corriendo por la puerta de atrás,", "que el guionista y nuestro corazón marquen los pasos en cada función.", "", "Quizás pida mucho y siempre un poco más,", "quizás sean locuras de un soñador,", "por ahí no sea coherente en esta canción", "o quizás deba esperar, y a su momento llegará.", "Quizás pida mucho y siempre un poco más,", "quizás sean locuras de un soñador,", "por ahí no sea coherente en esta canción", "o quizás deba esperar, y a su momento llegará.", "", "Que los amigos sean mis amigos y no conocidos por necesidad,", "que la familia sienta ser familia y no sean personas esperando heredar,", "que la conveniencia y la maldad se desvanezcan en mi felicidad,", "que el invierno y la mediocridad no congelen tu sinceridad.", "", "Quizás pida mucho y siempre un poco más,", "quizás sean locuras de un soñador,", "por ahí no sea coherente en esta canción", "o quizás deba esperar, y a su momento llegará.", "Quizás pida mucho y siempre un poco más,", "quizás sean locuras de un soñador,", "por ahí no sea coherente en esta canción", "o quizás deba esperar, y a su momento llegará.", "", "Quizás pida mucho y siempre un poco más,", "quizás sean locuras de un soñador,", "por ahí no sea coherente en esta canción", "o quizás deba esperar, y a su momento llegará.", "Y a su momento llegará."]},
+ {"c": "fa", "title": "Fantasmas", "coro": ["Siempre lo pienso"], "v": [211.8], "pal": [], "desc": "Sobre los miedos que nos persiguen y la certeza de que un día vamos a dejar de huir para enfrentarlos.", "lyrics": ["Golpean la puerta, son mis fantasmas,", "vienen sin tregua, me quieren llevar.", "No prendas la luz, quiero escapar,", "aún no puedo plantarme a pelear", "", "Siempre lo pienso,", "debo parar,", "un día no", "podré correr más", "", "Ahí están, huelen mi miedo,", "más intensos sé que se pondrán.", "El día amanece, todo sigue igual", "pero sé que lo podré cambiar.", "", "Siempre lo pienso,", "debo parar,", "un día no", "podré correr más", "Siempre lo pienso,", "debo parar,", "un día no", "podré correr más…", "", "Ahí están, huelen mi miedo,", "un día no podré correr más", "Sé que lo podré cambiar."]}
+];
+SONGS.forEach(s=>{s.title=s.title.trim();s.title=s.title.charAt(0).toUpperCase()+s.title.slice(1)});
+SONGS.sort((a,b)=>a.title.localeCompare(b.title,'es',{sensitivity:'base'}));
+const lib=[];SONGS.forEach(s=>s.v.forEach((d,i)=>lib.push({id:s.c+(i+1),song:s,title:s.title,ver:i+1,nv:s.v.length,dur:d,kind:'audio',src:`audio/${s.c}${i+1}.mp3`,lyrics:(s.lyrics||[]).map(text=>({t:null,text}))})));
+const sel={};SONGS.forEach(s=>sel[s.c]=1);
+
+/* ---------- portadas provisorias (después van tus imágenes) ---------- */
+function rng(seed){let s=0;for(const c of seed)s=(s*31+c.charCodeAt(0))>>>0;return()=>((s=(s*1664525+1013904223)>>>0)/4294967296)}
+/* Paletas Pantone (fondo oscuro → fondo medio, sol). Se asignan por orden de canción,
+   saltando de familia de color para que dos canciones seguidas nunca se parezcan. */
+const PANTONE=[
+  ['#330072','#685BC7','#F1C400'], /* 2685 → 2725, sol 7406 · violeta */
+  ['#651D32','#C8102E','#FFB549'], /* 7421 → 186, sol 1365 · rojo */
+  ['#154734','#009A44','#F6EB61'], /* 3435 → 347, sol 7404 · verde */
+  ['#003865','#0077C8','#FF9E1B'], /* 2955 → 3005, sol 1375 · azul */
+  ['#8A391B','#FF6900','#F3DD6D'], /* 7599 → 1505, sol 7403 · naranja */
+  ['#00594F','#00A499','#F8E08E'], /* 3292 → 3272, sol 1205 · turquesa */
+  ['#80225F','#E31C79','#FFC72C'], /* 228 → 213, sol 123 · fucsia */
+  ['#4E3629','#A47449','#F2C75C'], /* 476 → 7510, sol 135 · marrón */
+  ['#00778B','#00AEEF','#FFE900'], /* 3145 → Process Cyan, sol 803 · celeste */
+  ['#53565A','#97999B','#FF8200']  /* Cool Gray 11 → Cool Gray 7, sol 151 · gris */
+];
+function drawCover(s){
+  const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d'),[a,b,h]=PANTONE[SONGS.indexOf(s)%PANTONE.length],r=rng(s.c);
+  const g=x.createLinearGradient(0,0,600,600);g.addColorStop(0,a);g.addColorStop(1,b);x.fillStyle=g;x.fillRect(0,0,600,600);
+  x.globalAlpha=.9;x.fillStyle=h;x.beginPath();r();r();r();x.arc(358,167,117,0,7);x.fill();
+  x.globalAlpha=.18;x.strokeStyle=h;x.lineWidth=2;for(let k=0;k<14;k++){x.beginPath();for(let i=0;i<=600;i+=8)x.lineTo(i,330+k*18+Math.sin(i/(50+r()*20)+k)*12);x.stroke()}
+  x.globalAlpha=1;x.fillStyle='rgba(0,0,0,.35)';x.fillRect(0,440,600,160);
+  x.fillStyle='#fff';x.font='800 50px Syne, "Arial Black", sans-serif';x.textBaseline='alphabetic';
+  const words=s.title.toUpperCase().split(' '),lines=[];let ln='';words.forEach(w=>{const t=ln?ln+' '+w:w;if(x.measureText(t).width>540&&ln){lines.push(ln);ln=w}else ln=t});lines.push(ln);
+  lines.slice(-2).forEach((l,i,arr)=>x.fillText(l,30,560-(arr.length-1-i)*54));
+  s.art=c.toDataURL('image/jpeg',.82);
+}
+const artOf=t=>t.song?(t.song.img||t.song.art):null;
+
+/* ---------- estado ---------- */
+let list=[],cur=-1,nowT=null,shuffle=false,repeat=false,mode='read';
+const valid=id=>lib.some(t=>t.id===id);
+try{list=JSON.parse(localStorage.getItem('sala-lista')||'[]').filter(valid)}catch(e){}
+const save=()=>{try{localStorage.setItem('sala-lista',JSON.stringify(list.filter(id=>!id.startsWith('f-'))))}catch(e){}};
+const byId=id=>lib.find(t=>t.id===id);
+const fmt=s=>!isFinite(s)||!s?'0:00':Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* estilos: STYLE se completa cuando Gabriel los confirma; en modo edición se guardan en este navegador */
+const STYLE={op1:"Funk rock"};
+let localStyle={};try{localStyle=JSON.parse(localStorage.getItem('sala-estilos')||'{}')}catch(e){}
+const styleOf=t=>t.nv>1?(localStyle[t.id]||STYLE[t.id]||''):'';
+const EDIT=location.hash==='#editar';
+const sub=t=>t.song?(styleOf(t)?'':(t.nv>1?`Versión ${t.ver} · `:''))+fmt(t.dur):'Archivo propio · '+fmt(t.dur);
+const chip=t=>styleOf(t)?`<span class="style">${esc(styleOf(t))}</span>`:'';
+
+const I={add:'<path d="M12 5v14M5 12h14"/>',play:'<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',up:'<path d="M6 15l6-6 6 6"/>',down:'<path d="M6 9l6 6 6-6"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>'};
+const ib=(act,label,icon)=>`<button class="ib" data-act="${act}" aria-label="${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${I[icon]}</svg></button>`;
+const thumb=t=>artOf(t)?`<img src="${artOf(t)}" alt="">`:`<div class="vid">${t.kind==='video'?'MP4':'MP3'}</div>`;
+
+function render(){
+  const playing=nowT;
+  const norm=x=>x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),q=norm($('#q').value.trim());
+  const songRows=lib.filter(t=>t.song&&(!q||norm(t.title+' '+styleOf(t)).includes(q))).map(t=>`<li class="row ${playing===t?'now':''}" data-id="${t.id}">${thumb(t)}
+    <div style="min-width:0"><div class="tl"><span class="t">${esc(t.title)}</span>${chip(t)}</div><div class="s">${sub(t)}</div>${t.song.desc?`<div class="d">${esc(t.song.desc)}</div>`:''}
+    ${EDIT&&t.nv>1?`<input class="edit" list="estilos" data-style="${t.id}" value="${esc(styleOf(t))}" placeholder="Escribí el estilo" aria-label="Estilo de ${esc(t.title)} versión ${t.ver}">`:''}</div>
+    <div class="acts">${ib('now','Escuchar ahora','play')}${ib('add','Agregar a mi lista','add')}</div></li>`);
+  const own=lib.filter(t=>!t.song).map(t=>`<li class="row ${playing===t?'now':''}" data-id="${t.id}">${thumb(t)}
+    <div style="min-width:0"><div class="t">${esc(t.title)}</div><div class="s">${sub(t)}</div></div>
+    <div class="acts">${ib('now','Escuchar ahora','play')}${ib('add','Agregar a mi lista','add')}</div></li>`);
+  $('#catalog').innerHTML=songRows.concat(own).join('')||(SONGS.length?'<li class="empty">No hay canciones con ese nombre.</li>':'<li class="empty">Las canciones están en camino. Muy pronto vas a poder escucharlas acá.</li>');
+  $('#playlist').innerHTML=list.map((id,i)=>{const t=byId(id);return`<li class="row ${i===cur?'now':''}" data-i="${i}">${thumb(t)}
+    <div style="min-width:0"><div class="tl"><span class="t">${i+1}. ${esc(t.title)}</span>${chip(t)}</div><div class="s">${sub(t)}</div></div>
+    <div class="acts">${ib('up','Subir','up')}${ib('down','Bajar','down')}${ib('rm','Quitar','x')}</div></li>`}).join('');
+  $('#listEmpty').hidden=list.length>0;
+  const nx=nextIndex();$('#nextUp').innerHTML=nowT&&cur<0?'Suena solo este tema. Para escuchar varios de corrido, sumalos a tu lista con +.':cur>=0&&nx>=0?`Después: <b>${esc(byId(list[nx]).title)}</b>`:(list.length&&cur<0?`${list.length} en tu lista, listas para sonar de corrido`:'');
+  if(!$('#shareBox').hidden)fillShare();
+  save();
+}
+
+/* ---------- reproducción ---------- */
+const media=$('#media');
+function nextIndex(){if(!list.length||cur<0)return-1;if(shuffle&&list.length>1){if(nextIndex._c==null||nextIndex._for!==cur){let k;do{k=Math.floor(Math.random()*list.length)}while(k===cur);nextIndex._c=k;nextIndex._for=cur}return nextIndex._c}
+  const k=cur+1;return k<list.length?k:(repeat?0:-1)}
+function load(i){if(i<0||i>=list.length)return;cur=i;playTrack(byId(list[i]))}
+function playSingle(id){cur=-1;nextIndex._c=null;playTrack(byId(id))}
+function playTrack(t,autoplay=true){
+  nowT=t;
+  media.src=t.src;const isVid=t.kind==='video';media.hidden=!isVid;$('#cover').hidden=isVid;$('#art').classList.toggle('video',isVid);
+  if(!isVid)$('#cover').src=artOf(t)||'';
+  $('#title').textContent=t.title;$('#artist').textContent=sub(t);$('#desc').textContent=t.song&&t.song.desc||'';$('#desc').hidden=!(t.song&&t.song.desc);drawLyrics(t);render();
+  if(autoplay)media.play().catch(()=>{});
+}
+function togglePlay(){if(!nowT){if(list.length)load(0);else toast('Tocá ▶ en una canción, o armá tu lista con +');return}media.paused?media.play():media.pause()}
+media.addEventListener('play',()=>{$('#playIcon').innerHTML='<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';$('#play').setAttribute('aria-label','Pausar')});
+media.addEventListener('pause',()=>{$('#playIcon').innerHTML='<path d="M7 4v16l13-8z"/>';$('#play').setAttribute('aria-label','Reproducir')});
+media.addEventListener('ended',()=>{if(cur<0){render();return}const k=nextIndex();nextIndex._c=null;if(k>=0)load(k);else{cur=-1;nowT=null;render();toast('Terminó tu lista')}});
+media.addEventListener('loadedmetadata',()=>{const t=nowT;if(t&&!t.dur){t.dur=media.duration;render()}$('#dur').textContent=fmt(media.duration)});
+media.addEventListener('error',()=>{if(nowT)toast('No se pudo cargar esta canción')});
+media.addEventListener('timeupdate',tick);
+
+/* ---------- letra sincronizada ---------- */
+let lastActive=-1;
+function drawLyrics(t){lastActive=-1;const box=$('#lyrics');
+  if(!t.lyrics||!t.lyrics.length||t.lyrics.every(l=>!l.text)){box.innerHTML='<p class="ly plain">Esta canción todavía no tiene letra cargada.</p>';return}
+  const timed=t.lyrics.some(l=>l.t!=null);
+  /* estribillo = estrofa cuya primera línea se repite al comienzo de otra estrofa */
+  const key=x=>x.toLowerCase().replace(/[^a-záéíóúñü ]/g,'').trim();
+  const st=[];let curSt=null;t.lyrics.forEach((l,i)=>{if(!l.text){curSt=null;st[i]=-1;return}if(!curSt){curSt={first:key(l.text)};st.push(curSt)}st[i]=curSt});
+  const cnt={};st.forEach(x=>{if(x&&x!==-1&&x.first&&!x.counted){x.counted=1;cnt[x.first]=(cnt[x.first]||0)+1}});
+  const fixed=t.song&&t.song.coro?t.song.coro.map(key):null;
+  const isCoro=i=>st[i]&&st[i]!==-1&&(fixed?fixed.includes(st[i].first):cnt[st[i].first]>1);
+  box.innerHTML=t.lyrics.map((l,i)=>`<p class="ly ${timed&&mode==='kara'?'':'plain'} ${isCoro(i)?'coro':''}" data-i="${i}">${esc(l.text)||'&nbsp;'}</p>`).join('');box.scrollTop=0}
+function tick(){
+  const tm=media.currentTime,d=media.duration||0;
+  $('#cur').textContent=fmt(tm);if(d){$('#seek').value=Math.round(tm/d*1000);$('#pulse').style.setProperty('--p',tm/d)}
+  const t=nowT;if(!t||mode!=='kara'||!t.lyrics.length||t.lyrics[0].t==null)return;
+  let a=-1;t.lyrics.forEach((l,i)=>{if(l.t<=tm)a=i});
+  const els=[...$('#lyrics').children];
+  if(a!==lastActive){els.forEach((e,i)=>{e.classList.toggle('active',i===a);e.classList.toggle('past',i<a)});
+    if(els[a]){const box=$('#lyrics');box.scrollTop=els[a].offsetTop-box.offsetTop-box.clientHeight*.3}lastActive=a}
+  if(els[a]){const st=t.lyrics[a].t,en=t.lyrics[a+1]?t.lyrics[a+1].t:Math.min(d,st+6);els[a].style.setProperty('--k',Math.min(1,(tm-st)/Math.max(.5,en-st-.4)))}
+}
+$('#lyrics').addEventListener('click',e=>{const p=e.target.closest('.ly');const t=nowT;if(!p||p.classList.contains('plain')||!t)return;media.currentTime=t.lyrics[+p.dataset.i].t;media.play()});
+
+
+/* ---------- controles ---------- */
+$('#play').onclick=togglePlay;
+$('#next').onclick=()=>{const k=nextIndex();nextIndex._c=null;if(k>=0)load(k)};
+$('#prev').onclick=()=>{if(media.currentTime>3||cur<=0){media.currentTime=0}else load(cur-1)};
+$('#shuffle').onclick=e=>{shuffle=!shuffle;nextIndex._c=null;e.currentTarget.classList.toggle('on',shuffle);e.currentTarget.setAttribute('aria-pressed',shuffle);render()};
+$('#repeat').onclick=e=>{repeat=!repeat;e.currentTarget.classList.toggle('on',repeat);e.currentTarget.setAttribute('aria-pressed',repeat);render()};
+$('#seek').oninput=e=>{if(media.duration)media.currentTime=e.target.value/1000*media.duration};
+$('#addAll').onclick=()=>{let n=0;lib.filter(t=>t.song).forEach(t=>{const id=t.id;if(!list.includes(id)){list.push(id);n++}});render();toast(n?`Sumé ${n} a tu lista`:'Ya estaban todas')};
+$('#clearList').onclick=()=>{if(cur>=0){media.pause();nowT=null}list=[];cur=-1;render();toast('Lista vacía')};
+$('#catalog').onclick=e=>{
+  if(e.target.closest('.edit'))return;
+  const b=e.target.closest('[data-act]');if(!b)return;const id=b.closest('.row').dataset.id;
+  if(b.dataset.act==='add'){list.push(id);render();toast('Agregada a tu lista')}
+  else playSingle(id)};
+$('#playlist').onclick=e=>{const row=e.target.closest('.row');if(!row)return;const i=+row.dataset.i,b=e.target.closest('[data-act]');
+  if(!b){load(i);return}const act=b.dataset.act,j=act==='up'?i-1:i+1;
+  if(act==='rm'){list.splice(i,1);if(i===cur)cur=-1;else if(i<cur)cur--}
+  else if(j>=0&&j<list.length){[list[i],list[j]]=[list[j],list[i]];if(cur===i)cur=j;else if(cur===j)cur=i}
+  nextIndex._c=null;render()};
+
+$('#q').addEventListener('input',render);
+/* ---------- modo edición de estilos (link + #editar) ---------- */
+if(EDIT){$('#editBar').hidden=false;
+  $('#catalog').addEventListener('change',e=>{const i=e.target.closest('[data-style]');if(!i)return;const v=i.value.trim();
+    if(v)localStyle[i.dataset.style]=v;else delete localStyle[i.dataset.style];
+    try{localStorage.setItem('sala-estilos',JSON.stringify(localStyle))}catch(err){}
+    $('#editCount').textContent=Object.keys(localStyle).length});
+  $('#editCount').textContent=Object.keys(localStyle).length;
+  $('#copyStyles').onclick=()=>{const txt=lib.filter(t=>t.song).map(t=>`${t.id} | ${t.title} V${t.ver} | ${styleOf(t)||'?'}`).join('\n');
+    navigator.clipboard.writeText(txt).then(()=>toast('Estilos copiados: pegámelos en el chat')).catch(()=>{const a=$('#styleDump');a.hidden=false;a.value=txt;a.select();toast('Copiá el texto de abajo')})};}
+/* ---------- compartir lista ---------- */
+const base=()=>/claude|anthropic/.test(location.hostname)||!/^https?:/.test(location.protocol)?ARTIFACT:location.origin+location.pathname;
+function fillShare(){const ids=list.filter(id=>!id.startsWith('f-'));$('#shareLink').value=ids.length?base()+'#l-'+ids.join('-'):'Sumá canciones a tu lista primero'}
+$('#shareBtn').onclick=()=>{const box=$('#shareBox');box.hidden=!box.hidden;if(!box.hidden){fillShare();if(list.some(id=>id.startsWith('f-')))toast('Tus archivos de prueba no viajan en el link')}};
+$('#copyLink').onclick=()=>{const inp=$('#shareLink');if(!inp.value.startsWith('http'))return;
+  navigator.clipboard.writeText(inp.value).then(()=>toast('Link copiado')).catch(()=>{inp.focus();inp.select();toast('Seleccioné el link: copialo')})};
+let shared=[];
+try{const h=location.hash;if(h.startsWith('#l-'))shared=h.slice(3).split('-').filter(valid)}catch(e){}
+if(shared.length){$('#banner').hidden=false;$('#bannerN').textContent=shared.length}
+$('#useShared').onclick=()=>{list=shared.slice();cur=-1;$('#banner').hidden=true;render();load(0)};
+$('#ignoreShared').onclick=()=>{$('#banner').hidden=true};
+
+/* ---------- archivos propios ---------- */
+const addOwnFiles=e=>{[...e.target.files].forEach((f,k)=>{const id='f-'+Date.now()+k;
+  lib.push({id,title:f.name.replace(/\.[^.]+$/,''),kind:f.type.startsWith('video')?'video':'audio',src:URL.createObjectURL(f),lyrics:[],dur:0})});
+  render();toast('Archivos sumados a Canciones');e.target.value=''};
+const loadLyricsFile=async e=>{const f=e.target.files[0];e.target.value='';const t=nowT;if(!f)return;if(!t){toast('Primero poné una canción');return}
+  const txt=await f.text(),out=[];
+  txt.split(/\r?\n/).forEach(line=>{const tags=[...line.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g)];const text=line.replace(/\[[^\]]*\]/g,'').trim();
+    if(tags.length)tags.forEach(m=>out.push({t:+m[1]*60+ +m[2],text}));else if(!/^\[/.test(line))out.push({t:null,text:line.trim()})});
+  const timed=out.filter(l=>l.t!=null);t.lyrics=timed.length?timed.sort((a,b)=>a.t-b.t):out;drawLyrics(t);tick();
+  toast(timed.length?'Letra con tiempos cargada':'Letra cargada (sin tiempos)')};
+
+/* ---------- bienvenida ---------- */
+const intro=$('#intro');
+function closeIntro(){intro.classList.add('out');document.body.classList.remove('dim');try{localStorage.setItem('sala-bienvenida','1')}catch(e){}setTimeout(()=>{(shared.length?$('#useShared'):$('#q')).focus()},50)}
+function openIntro(){intro.classList.remove('out');document.body.classList.add('dim');$('#enter').focus()}
+let seen=false;try{seen=localStorage.getItem('sala-bienvenida')==='1'}catch(e){}
+if(seen&&!EDIT){intro.classList.add('out')}else{document.body.classList.add('dim')}
+if(EDIT)intro.classList.add('out'),document.body.classList.remove('dim');
+$('#enter').onclick=closeIntro;$('#howto').onclick=openIntro;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!intro.classList.contains('out'))closeIntro()});
+SONGS.forEach(drawCover);render();
+(document.fonts?document.fonts.load('800 50px Syne'):Promise.resolve()).then(()=>{SONGS.forEach(drawCover);render();const t=nowT;if(t&&t.song)$('#cover').src=artOf(t)}).catch(()=>{});
+})();
+</script>
+
+</body>
+</html>
