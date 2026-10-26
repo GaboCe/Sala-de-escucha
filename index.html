@@ -360,7 +360,7 @@ function drawLyrics(t){lastActive=-1;const box=$('#lyrics');
   const cnt={};st.forEach(x=>{if(x&&x!==-1&&x.first&&!x.counted){x.counted=1;cnt[x.first]=(cnt[x.first]||0)+1}});
   const fixed=t.song&&t.song.coro?t.song.coro.map(key):null;
   const isCoro=i=>st[i]&&st[i]!==-1&&(fixed?fixed.includes(st[i].first):cnt[st[i].first]>1);
-  box.innerHTML=t.lyrics.map((l,i)=>`<p class="ly ${timed&&mode==='kara'?'':'plain'} ${isCoro(i)?'coro':''}" data-i="${i}">${esc(l.text)||'&nbsp;'}</p>`).join('')+(t.song?'<p class="credit">Letra y música: Gabriel Asa ©</p>':'');box.scrollTop=0}
+  box.innerHTML=t.lyrics.map((l,i)=>`<p class="ly ${timed&&mode==='kara'?'':'plain'} ${isCoro(i)?'coro':''}" data-i="${i}">${esc(l.text)||'&nbsp;'}</p>`).join('')+(t.song?'<p class="credit">Letra: Gabriel Asa ©</p>':'');box.scrollTop=0}
 function tick(){
   const tm=media.currentTime,d=media.duration||0;
   $('#cur').textContent=fmt(tm);if(d){$('#seek').value=Math.round(tm/d*1000);$('#pulse').style.setProperty('--p',tm/d)}
